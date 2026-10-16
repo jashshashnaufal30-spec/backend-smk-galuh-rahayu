@@ -1,0 +1,159 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  super_admin
+  admin_berita
+  admin_ppdb
+}
+
+enum PostStatus {
+  draft
+  published
+}
+
+enum Gender {
+  L
+  P
+}
+
+enum PpdbStatus {
+  pending
+  verified
+  accepted
+  rejected
+}
+
+enum GalleryCategory {
+  kegiatan
+  fasilitas
+  prestasi
+}
+
+model User {
+  id        BigInt   @id @default(autoincrement())
+  name      String   @db.VarChar(100)
+  email     String   @unique @db.VarChar(100)
+  password  String   @db.VarChar(255)
+  role      Role     @default(admin_berita)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  posts Post[]
+
+  @@map("users")
+}
+
+model Category {
+  id        BigInt   @id @default(autoincrement())
+  name      String   @db.VarChar(100)
+  slug      String   @unique @db.VarChar(120)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  posts Post[]
+
+  @@map("categories")
+}
+
+model Post {
+  id            BigInt     @id @default(autoincrement())
+  userId        BigInt     @map("user_id")
+  categoryId    BigInt     @map("category_id")
+  title         String     @db.VarChar(255)
+  slug          String     @unique @db.VarChar(255)
+  body          String     @db.LongText
+  featuredImage String?    @map("featured_image") @db.LongText
+  status        PostStatus @default(draft)
+  views         Int        @default(0)
+  publishedAt   DateTime?  @map("published_at")
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  @@map("posts")
+}
+
+model Major {
+  id          BigInt   @id @default(autoincrement())
+  code        String   @unique @db.VarChar(20)
+  name        String   @db.VarChar(100)
+  slug        String   @unique @db.VarChar(120)
+  description String?  @db.Text
+  headOfMajor String?  @map("head_of_major") @db.VarChar(100)
+  image       String?  @db.VarChar(255)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  ppdbRegistrations PpdbRegistration[]
+
+  @@map("majors")
+}
+
+model PpdbRegistration {
+  id                 BigInt     @id @default(autoincrement())
+  registrationNumber String     @unique @map("registration_number") @db.VarChar(30)
+  fullName           String     @map("full_name") @db.VarChar(100)
+  nisn               String     @unique @db.VarChar(20)
+  gender             Gender
+  placeOfBirth       String     @map("place_of_birth") @db.VarChar(100)
+  dateOfBirth        DateTime   @map("date_of_birth") @db.Date
+  religion           String     @db.VarChar(30)
+  address            String     @db.Text
+  phoneNumber        String     @map("phone_number") @db.VarChar(20)
+  parentName         String     @map("parent_name") @db.VarChar(100)
+  parentPhone        String     @map("parent_phone") @db.VarChar(20)
+  schoolOrigin       String     @map("school_origin") @db.VarChar(150)
+  majorId            BigInt     @map("major_id")
+  status             PpdbStatus @default(pending)
+  documentsPath      String?    @map("documents_path") @db.VarChar(255)
+  notes              String?    @db.Text
+  createdAt          DateTime   @default(now()) @map("created_at")
+  updatedAt          DateTime   @updatedAt @map("updated_at")
+
+  major Major @relation(fields: [majorId], references: [id], onDelete: Restrict)
+
+  @@map("ppdb_registrations")
+}
+
+model Gallery {
+  id        BigInt          @id @default(autoincrement())
+  title     String          @db.VarChar(150)
+  caption   String?         @db.Text
+  imagePath String          @map("image_path") @db.VarChar(255)
+  category  GalleryCategory @default(kegiatan)
+  createdAt DateTime        @default(now()) @map("created_at")
+  updatedAt DateTime        @updatedAt @map("updated_at")
+
+  @@map("galleries")
+}
+
+model Contact {
+  id        BigInt   @id @default(autoincrement())
+  name      String   @db.VarChar(100)
+  email     String   @db.VarChar(100)
+  phone     String?  @db.VarChar(20)
+  subject   String   @db.VarChar(150)
+  message   String   @db.Text
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("contacts")
+}
+
+model Setting {
+  id           BigInt   @id @default(autoincrement())
+  settingKey   String   @unique @map("setting_key") @db.VarChar(100)
+  settingValue String?  @map("setting_value") @db.Text
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("settings")
+}
